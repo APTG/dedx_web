@@ -31,21 +31,29 @@ Filed issue #865 with the analysis and evidence.
 
 **AI response**: Implemented the fix scoped entirely to the screenshot test,
 not the production app (avoids a user-facing typography change as a side
-effect of a CI stability fix). Downloaded the Google-hosted Inter variable
-font (weights 400–700, latin subset, SIL OFL 1.1 license), committed it to
-`tests/fixtures/fonts/inter-variable-latin.woff2` (~47 KB) with the license
-text alongside it, and injected it in `tests/docs-screenshots.spec.ts` via a
-data-URI `@font-face` + `font-family` override applied in the same
-`addStyleTag` call as the existing `FREEZE_CSS`. The existing
-`document.fonts.ready` wait (added for issue #755) now also covers this font,
-so no new wait logic was needed.
+effect of a CI stability fix). Downloaded the Google-hosted Inter font
+(latin subset, SIL OFL 1.1 license) via a CSS2 request for weights
+400/500/600/700; Google serves Inter as a single variable-font file
+regardless of which discrete weights are requested (confirmed: all four
+requested `@font-face` blocks pointed at the same URL), so the committed
+`tests/fixtures/fonts/inter-variable-latin.woff2` (~47 KB) actually spans
+the font's full variable weight axis — `fc-query` reports named instances
+from Thin through Black. The test's injected `@font-face` declares the
+matching full range (`font-weight: 100 900`) so Tailwind's various
+font-weight utilities all resolve against it. Injected it in
+`tests/docs-screenshots.spec.ts` via a data-URI `@font-face` +
+`font-family` override applied in the same `addStyleTag` call as the
+existing `FREEZE_CSS`. The existing `document.fonts.ready` wait (added for
+issue #755) now also covers this font, so no new wait logic was needed.
 
-Verified locally: built the app, ran `pnpm docs:screenshots` twice in a row,
-and diffed the two output sets with ImageMagick — 0 differing pixels across
-all four images, confirming the capture is now deterministic. All four
-screenshots were regenerated and committed with the new stable renders (one
-intentional one-time re-baseline, since Inter's metrics differ slightly from
-whatever the host previously resolved).
+Verified locally: built the app, ran `pnpm docs:screenshots` twice in a row.
+Pixel-diffed the two output sets with ImageMagick (`compare -metric AE`) —
+0 differing pixels across all four images — and additionally confirmed
+byte-for-byte identical via `sha256sum`, so the capture is now fully
+deterministic, not just visually indistinguishable. All four screenshots
+were regenerated and committed with the new stable renders (one intentional
+one-time re-baseline, since Inter's metrics differ slightly from whatever
+the host previously resolved).
 
 ## Tasks
 
@@ -65,8 +73,9 @@ whatever the host previously resolved).
   the whole app a custom typeface. The goal was fixing CI determinism, not
   changing the product's visual design — that's a separate decision for the
   team to make deliberately, not as a side effect of a screenshot-stability
-  fix. Used a single variable-font file (covers weights 400–700 the app
-  actually uses) to keep the fixture small (~47 KB) and the injected CSS
+  fix. Used a single variable-font file (one file covers the full weight
+  axis, matching the `font-weight: 100 900` declared in the test's
+  `@font-face`) to keep the fixture small (~47 KB) and the injected CSS
   simple.
 - **Issue**: None outstanding. Future Playwright/Chromium bumps should no
   longer regenerate the committed screenshots on their own; a real UI change
