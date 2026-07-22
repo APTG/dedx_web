@@ -49,6 +49,16 @@ export class CalculatorPageOrchestrator {
   multiEntityState = $state<MultiEntityState | null>(null);
   inverseLookupState = $state<InverseLookupState | null>(null);
 
+  // Toast feedback for the calculator page (#869), same `{ text, token }`
+  // signal shape as the plot page's Add Series toast — see `notice-toast.svelte`.
+  programFeedback = $state<{ text: string; token: number } | null>(null);
+  #programFeedbackToken = 0;
+
+  announceProgramFeedback(text: string): void {
+    this.#programFeedbackToken += 1;
+    this.programFeedback = { text, token: this.#programFeedbackToken };
+  }
+
   // Shared-compound-from-URL flow (banner + recovery editor, issue #648) lives in
   // its own module (issue #763). The orchestrator holds an instance and exposes
   // its surface via getters/delegating methods so the calculator page consumes it
@@ -202,7 +212,18 @@ export class CalculatorPageOrchestrator {
         } else if (urlState.materialId !== null) {
           appInit.entityState.selectMaterial(urlState.materialId);
         }
-        if (urlState.programId !== null) appInit.entityState.selectProgram(urlState.programId);
+        if (urlState.programId !== null) {
+          appInit.entityState.selectProgram(urlState.programId);
+          // Basic mode has no program selector and always auto-selects (#816) —
+          // `setupModeFallbacks` below silently resets this same selection back
+          // to Auto. Tell the user why the link's program choice didn't stick
+          // rather than letting it disappear with no explanation (#869).
+          if (!isAdvancedMode.value) {
+            this.announceProgramFeedback(
+              "Basic mode ignores the link's program; using auto-select.",
+            );
+          }
+        }
 
         if (urlState.isAdvancedMode && urlState.across) {
           if (urlState.across === "particle") {
