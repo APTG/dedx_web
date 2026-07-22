@@ -27,6 +27,7 @@ Use one bullet per session (newest first):
   (previously triggered only by the all-zero SHA) to also trigger when `git cat-file -e`
   can't resolve `before` locally, falling back to the merge-base with the default branch
   in both cases. (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-ci-guard-force-push-fix.md)
 - 2026-07-22 — **entity-selection / #871**: Fixed Auto-select resolving a program from
   particle+material alone, ignoring energy — a heavy ion below a chain candidate's energy
   floor (e.g. Boron below ICRU 73's 0.025 MeV/nucleon floor) got stuck reporting "out of
