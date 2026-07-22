@@ -17,6 +17,13 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-22 — **entity-selection / #869**: Follow-up to the Basic-mode `program=`
+  toast — manual local verification found it easy to miss at the bottom of the
+  screen. Added an optional `position: "top" | "bottom"` prop to `notice-toast.svelte`
+  (default `"bottom"`, preserving the Plot page's existing Add Series confirmation
+  placement) and switched the calculator page's usage to `position="top"`. (Claude
+  Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-issue-869-basic-mode-program-toast.md)
 - 2026-07-22 — **CI / guard-forbidden-files**: Fixed the `workflow-guards` job's push-event
   path failing with "Invalid revision range" after rebasing and force-pushing PR #870's
   branch onto an updated `master`. Root cause: for `push` events the guard diffs

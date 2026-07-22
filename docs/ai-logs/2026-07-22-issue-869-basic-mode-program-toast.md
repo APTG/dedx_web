@@ -118,3 +118,24 @@ and asserts the toast appears, plus two negative cases (no `program=` param;
 page's toast). The user declined to install the Claude in Chrome extension for
 manual browser verification this session; added a note to `CLAUDE.md` recording
 that preference (use Playwright instead) for future sessions.
+
+### Prompt 3: Manual local verification found the toast easy to miss
+
+After checking out the branch locally, the user confirmed the toast fires
+correctly but reported it renders at the very bottom of the screen, where
+it's easy to miss.
+
+**AI response**: Added an optional `position: "top" | "bottom"` prop to
+`notice-toast.svelte` (default `"bottom"`, preserving the Plot page's
+existing Add Series confirmation placement) and set the calculator page's
+usage to `position="top"`. New component test covers both the default
+bottom placement and the `top-4` class when `position="top"`. Full Vitest
+(1969) + ESLint + `format:check` clean; re-ran both
+`calculator-basic-mode-program-toast.spec.ts` and `plot-add-series.spec.ts`
+against a real build — all 10 tests pass, confirming the Plot toast's
+placement is unaffected.
+- **Decision**: Made placement a per-consumer prop rather than moving the
+  shared component's default, since the Plot page's Add Series confirmation
+  is a low-urgency positive confirmation where bottom placement is fine —
+  only the Basic-mode program-discard notice needed the more attention-
+  grabbing position.
