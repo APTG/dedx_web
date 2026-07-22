@@ -136,12 +136,29 @@ describe("encodeCalculatorUrl", () => {
     expect(p.has("sunit")).toBe(false);
   });
 
-  it("encodes and round-trips an explicit sunit", () => {
-    for (const token of ["kev-um", "mev-cm", "mev-cm2-g"]) {
+  it("encodes and round-trips a non-default explicit sunit", () => {
+    // "kev-um" is the condensed-material default (materialIsGas unset in
+    // defaultState) — only genuinely non-default tokens round-trip.
+    for (const token of ["mev-cm", "mev-cm2-g"]) {
       const p = encodeCalculatorUrl({ ...defaultState, sunit: token });
       expect(p.get("sunit")).toBe(token);
       expect(decodeCalculatorUrl(p).sunit).toBe(token);
     }
+  });
+
+  it("omits sunit when it equals the material-phase default (§4 item 11)", () => {
+    // Condensed material (materialIsGas unset/false): "kev-um" is default.
+    expect(encodeCalculatorUrl({ ...defaultState, sunit: "kev-um" }).has("sunit")).toBe(false);
+    // Gas material: "mev-cm2-g" is default instead.
+    expect(
+      encodeCalculatorUrl({ ...defaultState, sunit: "mev-cm2-g", materialIsGas: true }).has(
+        "sunit",
+      ),
+    ).toBe(false);
+    // The same "kev-um" token is non-default for a gas material — emitted.
+    expect(
+      encodeCalculatorUrl({ ...defaultState, sunit: "kev-um", materialIsGas: true }).get("sunit"),
+    ).toBe("kev-um");
   });
 
   it("preserves an unknown sunit token on decode for the orchestrator to handle", () => {

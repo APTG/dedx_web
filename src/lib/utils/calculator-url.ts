@@ -80,6 +80,16 @@ const VALID_CSDA_MASTER_UNITS = new Set(["nm", "um", "mm", "cm", "m"]);
 /** Valid STP unit tokens for inverse STP mode (imode=stp). */
 const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
 
+/**
+ * Default `sunit=` token for a material phase — condensed materials default
+ * to "kev-um", gas materials to "mev-cm2-g" (mirrors `getStpDisplayUnit()` in
+ * `calculator.svelte.ts`). Used to omit `sunit=` from canonical output when
+ * it's redundant with the phase default (§4 item 11), not just when absent.
+ */
+function defaultSunitToken(materialIsGas: boolean | undefined): string {
+  return materialIsGas ? "mev-cm2-g" : "kev-um";
+}
+
 /** URL slug → EnergyUnit for the `uanchor` param. */
 const UANCHOR_TO_UNIT: Readonly<Record<string, EnergyUnit>> = {
   mev: "MeV",
@@ -510,14 +520,14 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("uanchor", UNIT_TO_UANCHOR[state.energyAnchor]);
   }
 
-  // Stopping-power output unit — emitted only when the user made an explicit
-  // choice (omitted ⇒ default keV/µm, so pre-existing URLs are unchanged).
+  // Stopping-power output unit — omitted when it matches the material-phase
+  // default (§4 item 11: "kev-um" condensed / "mev-cm2-g" gas), so a
+  // round-tripped link never carries a redundant explicit token.
   // `calc=inverse-stp`'s master unit (`state.iunit`) shares this same wire
-  // param (§2, §3.4) and takes precedence when non-default; its own default
-  // ("kev-um") is likewise omitted.
-  const stpMasterUnitOverride =
-    state.imode === "stp" && state.iunit && state.iunit !== "kev-um" ? state.iunit : undefined;
-  const effectiveSunit = stpMasterUnitOverride ?? state.sunit;
+  // param (§2, §3.4) and takes precedence when present.
+  const defaultSunit = defaultSunitToken(state.materialIsGas);
+  const rawSunit = state.imode === "stp" && state.iunit ? state.iunit : state.sunit;
+  const effectiveSunit = rawSunit && rawSunit !== defaultSunit ? rawSunit : undefined;
   if (effectiveSunit) {
     params.set("sunit", effectiveSunit);
   }
