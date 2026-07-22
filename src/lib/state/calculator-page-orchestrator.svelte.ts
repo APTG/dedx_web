@@ -213,12 +213,15 @@ export class CalculatorPageOrchestrator {
           appInit.entityState.selectMaterial(urlState.materialId);
         }
         if (urlState.programId !== null) {
-          appInit.entityState.selectProgram(urlState.programId);
-          // Basic mode has no program selector and always auto-selects (#816) —
-          // `setupModeFallbacks` below silently resets this same selection back
-          // to Auto. Tell the user why the link's program choice didn't stick
-          // rather than letting it disappear with no explanation (#869).
-          if (!isAdvancedMode.value) {
+          // Basic mode has no program selector and always auto-selects (#816).
+          // Applying the URL's program here would still retarget particle/material
+          // selection via selectProgram()'s availability check, even though
+          // `setupModeFallbacks` below immediately resets the program itself back
+          // to Auto — so skip the call entirely in Basic mode and just tell the
+          // user why the link's program choice didn't stick (#869).
+          if (isAdvancedMode.value) {
+            appInit.entityState.selectProgram(urlState.programId);
+          } else {
             this.announceProgramFeedback(
               "Basic mode ignores the link's program; using auto-select.",
             );
