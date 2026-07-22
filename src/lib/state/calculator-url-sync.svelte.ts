@@ -114,13 +114,16 @@ export function setupCalculatorUrlSync(
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
       externalSources: loadedExternalSources,
+      // Threaded in both modes (not just Advanced) so encodeCalculatorUrl can
+      // omit sunit= when it matches the material-phase default in Basic mode
+      // too (calc=inverse-stp is shared between modes, issue #840/#841).
+      materialIsGas: builtinMaterial?.isGasByDefault,
       ...customUrlFields,
       // Include advanced mode state when active
       ...(isAdvancedMode.value
         ? {
             isAdvancedMode: true,
             advancedOptions: advancedOptions.value,
-            materialIsGas: builtinMaterial?.isGasByDefault,
           }
         : {}),
       ...(activeMultiProgramState

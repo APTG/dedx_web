@@ -124,17 +124,17 @@ test.describe("Inverse Lookups — Range Tab", () => {
 
     await page.waitForFunction(
       () =>
-        window.location.search.includes("imode=csda") &&
-        window.location.search.includes("iunit=mm"),
+        window.location.search.includes("calc=range") &&
+        window.location.search.includes("runit=mm"),
       { timeout: 5000 },
     );
 
     const url = page.url();
-    expect(url).toContain("imode=csda");
-    expect(url).toContain("iunit=mm");
+    expect(url).toContain("calc=range");
+    expect(url).toContain("runit=mm");
 
     await page.reload();
-    await page.waitForFunction(() => window.location.search.includes("iunit=mm"), {
+    await page.waitForFunction(() => window.location.search.includes("runit=mm"), {
       timeout: 10000,
     });
 

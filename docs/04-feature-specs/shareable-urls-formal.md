@@ -1,5 +1,16 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
+> **Status:** v11 (2026-07-22) — issue #841: `calculator-url.ts` now emits
+> the v3-canonical `calc=`/`runit=`/`sunit=` tokens instead of the retired
+> `imode=`/`iunit=` names (closing the implementation-gap note added by
+> #840 below). Decode-side backward compatibility is kept: existing
+> `imode=`/`iunit=` links (shipped before this fix) still hydrate correctly
+> — `calc=`/`runit=`/`sunit=` win when present, `imode=`/`iunit=` are used
+> only as a fallback when the canonical tokens are absent. `iunit=` for
+> `imode=stp` folds into the same `sunit=` param already used for the
+> Stopping Power column header unit (§2), since the two were always meant
+> to share one token. Conformance vector 3a updated (§5.1) to match.
+>
 > **Status:** v10 (2026-07-13) — issue #840: `calc=`, `lookups=`, `runit=`,
 > `sunit=`, and `istpbranch=` are no longer advanced-mode-only (§3.5, §4 items
 > 8/12/14) — the Energy→/Range→/STP→ tab selector is shared state between
@@ -423,14 +434,11 @@ When basic mode:
   lists, `qshow=`) remain advanced-only, since multi-entity/multi-program
   comparison itself is advanced-only.
 
-> **Implementation note (issue #840):** as of this writing, the shipped
-> `calculator-url.ts` does not yet emit/read `calc=`, `runit=`, or `sunit=`
-> for the inverse-lookup fields — it still uses the retired v1 names
-> `imode=`/`iunit=` directly (only `ivalues=` → `lookups=` was migrated). The
-> mode-gating rule above is the correct behavior in both the v3-canonical
-> form (`calc=`/`runit=`/`sunit=`) and the as-shipped form (`imode=`/`iunit=`)
-> — only the token names differ. Reconciling the as-shipped names with this
-> formal contract is tracked separately, not as part of #840.
+> **Resolved (issue #841):** `calculator-url.ts` now emits/reads `calc=`,
+> `runit=`, and `sunit=` for the inverse-lookup fields, matching this formal
+> contract. The retired `imode=`/`iunit=` names are still accepted on
+> decode as a fallback (for links shared before this fix) but are never
+> emitted in canonical output.
 
 When advanced mode:
 
@@ -648,11 +656,11 @@ Normalization rules:
 3a. Basic calculator, range mode (issue #840 — `calc=range` is no longer
 advanced-only; `mode=` is omitted since basic is the default): - Input: `urlv=3&particle=1&material=276&program=9&lookups=7.718:cm&uanchor=MeV&calc=range` - Canonical: unchanged. - Note: the basic-mode Range→ card shows a single row with no `runit=`/
 per-row "Unit" column; this vector only exercises URL round-tripping.
-**As shipped**, the equivalent live URL uses the retired v1 names
-instead of `lookups=`/`calc=` for two of these three tokens — see the
-implementation note in §3.5 — i.e. today's real query string is
-`...&energies=100&eunit=MeV&imode=csda&lookups=7.718:cm&iunit=cm`
-(no `mode=` param since basic is the default in both schemes).
+As of issue #841, the shipped implementation matches this vector
+exactly (`calc=`/`lookups=` are emitted natively). A legacy link using
+the retired v1 names — `...&energies=100&eunit=MeV&imode=csda&lookups=7.718:cm&iunit=cm`
+— still hydrates identically and is rewritten to this canonical form on
+`replaceState` (no `mode=` param since basic is the default in both schemes).
 
 4. Advanced calculator, inverse-STP mode, both branches (input has redundant `sunit=kev-um` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`

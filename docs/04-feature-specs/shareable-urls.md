@@ -1,12 +1,17 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
+> **Status:** v10 (2026-07-22) — issue #841: `calculator-url.ts` now emits
+> and reads the v3-canonical `calc=`/`runit=`/`sunit=` tokens described
+> below, instead of the retired `imode=`/`iunit=` names. Existing
+> `imode=`/`iunit=` links keep hydrating via decode-side backward
+> compatibility. See `shareable-urls-formal.md` §3.4/§3.5 for the
+> normative migration rule.
+>
 > **Status:** v9 (2026-07-13) — issue #840: `calc=`, `lookups=`, `runit=`,
 > `sunit=`, and `istpbranch=` are no longer advanced-mode-only. The
 > Energy→/Range→/STP→ tab and its row(s) are shared state between basic and
 > advanced mode; basic mode renders a simplified single-row card per tab
-> instead of the advanced table. See `shareable-urls-formal.md` §3.5 for the
-> normative rule and an implementation-gap note on the as-shipped `imode=`/
-> `iunit=` param names.
+> instead of the advanced table.
 >
 > **Status:** v8 (2026-06-01) — v3 URL schema (`urlv=3`): list-item separator
 > changed `,` → `~` (issue #672); v2 links accepted on read

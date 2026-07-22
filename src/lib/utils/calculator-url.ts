@@ -80,6 +80,16 @@ const VALID_CSDA_MASTER_UNITS = new Set(["nm", "um", "mm", "cm", "m"]);
 /** Valid STP unit tokens for inverse STP mode (imode=stp). */
 const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
 
+/**
+ * Default `sunit=` token for a material phase — condensed materials default
+ * to "kev-um", gas materials to "mev-cm2-g" (mirrors `getStpDisplayUnit()` in
+ * `calculator.svelte.ts`). Used to omit `sunit=` from canonical output when
+ * it's redundant with the phase default (§4 item 11), not just when absent.
+ */
+function defaultSunitToken(materialIsGas: boolean | undefined): string {
+  return materialIsGas ? "mev-cm2-g" : "kev-um";
+}
+
 /** URL slug → EnergyUnit for the `uanchor` param. */
 const UANCHOR_TO_UNIT: Readonly<Record<string, EnergyUnit>> = {
   mev: "MeV",
@@ -99,6 +109,22 @@ function isUanchorSlug(value: string): value is keyof typeof UANCHOR_TO_UNIT {
 }
 
 /**
+ * Resolve the active inverse-lookup tab from the v3-canonical `calc=` token,
+ * falling back to the retired `imode=` (shipped before issue #841) only when
+ * `calc=` is entirely absent — an explicit `calc=forward` (or any other
+ * value) always wins over a stale `imode=`.
+ */
+function resolveImodeToken(
+  calcRaw: string | null,
+  imodeRaw: string | null,
+): "csda" | "stp" | undefined {
+  if (calcRaw === "range") return "csda";
+  if (calcRaw === "inverse-stp") return "stp";
+  if (calcRaw !== null) return undefined;
+  return imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+}
+
+/**
  * Decoded inverse mode from URL params.
  */
 export interface InverseModeUrlState {
@@ -111,12 +137,13 @@ export interface InverseModeUrlState {
  * Decode inverse mode from URLSearchParams.
  * Returns { imode, lookups, iunit } or undefined if not present/invalid.
  *
- * Backward-compat: v1 `ivalues=` param is accepted and treated as `lookups=`.
+ * Backward-compat: v1 `ivalues=` param is accepted and treated as `lookups=`,
+ * and the retired `imode=`/`iunit=` names (shipped before issue #841) are
+ * accepted as a fallback when the v3-canonical `calc=`/`runit=`/`sunit=`
+ * tokens are absent — see `shareable-urls-formal.md` §3.4.
  */
 export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUrlState | undefined {
-  const imodeRaw = params.get("imode");
-  const imode: "csda" | "stp" | undefined =
-    imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+  const imode = resolveImodeToken(params.get("calc"), params.get("imode"));
 
   if (!imode) return undefined;
 
@@ -139,12 +166,14 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
     }
   }
 
-  // Validate and default iunit based on imode
-  const iunitRaw = params.get("iunit") ?? undefined;
+  // Validate and default iunit based on imode. Canonical wire param is
+  // `runit=` (csda) / `sunit=` (stp); the retired `iunit=` is a fallback.
   if (imode === "csda") {
-    iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
+    const runitRaw = params.get("runit") ?? params.get("iunit") ?? undefined;
+    iunit = runitRaw && VALID_CSDA_MASTER_UNITS.has(runitRaw) ? runitRaw : "cm";
   } else if (imode === "stp") {
-    iunit = iunitRaw && VALID_STP_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "kev-um";
+    const sunitRaw = params.get("sunit") ?? params.get("iunit") ?? undefined;
+    iunit = sunitRaw && VALID_STP_MASTER_UNITS.has(sunitRaw) ? sunitRaw : "kev-um";
   }
 
   // Assign default unit to rows that don't have per-row suffix
@@ -446,9 +475,11 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     }
   }
 
-  // Inverse lookup params (only when imode is set)
+  // Inverse lookup params (only when imode is set). Canonical wire param is
+  // `calc=range|inverse-stp` (`forward` is the default and omitted); the
+  // retired `imode=csda|stp` is never emitted (§3.4).
   if (state.imode) {
-    params.set("imode", state.imode);
+    params.set("calc", state.imode === "csda" ? "range" : "inverse-stp");
 
     if (state.lookups?.length) {
       const encodedLookups: string[] = [];
@@ -472,8 +503,12 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
       }
     }
 
-    if (state.iunit) {
-      params.set("iunit", state.iunit);
+    // Range unit anchor — omitted when equal to the "cm" default (§4 item 10).
+    // The stp equivalent is folded into the shared `sunit=` param below,
+    // since `runit=`/`sunit=` and the retired `iunit=` are the same concept
+    // as the Stopping Power column header unit for calc=inverse-stp (§2).
+    if (state.imode === "csda" && state.iunit && state.iunit !== "cm") {
+      params.set("runit", state.iunit);
     }
 
     if (state.imode === "stp" && state.istpBranchState === "both") {
@@ -485,10 +520,16 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("uanchor", UNIT_TO_UANCHOR[state.energyAnchor]);
   }
 
-  // Stopping-power output unit — emitted only when the user made an explicit
-  // choice (omitted ⇒ default keV/µm, so pre-existing URLs are unchanged).
-  if (state.sunit) {
-    params.set("sunit", state.sunit);
+  // Stopping-power output unit — omitted when it matches the material-phase
+  // default (§4 item 11: "kev-um" condensed / "mev-cm2-g" gas), so a
+  // round-tripped link never carries a redundant explicit token.
+  // `calc=inverse-stp`'s master unit (`state.iunit`) shares this same wire
+  // param (§2, §3.4) and takes precedence when present.
+  const defaultSunit = defaultSunitToken(state.materialIsGas);
+  const rawSunit = state.imode === "stp" && state.iunit ? state.iunit : state.sunit;
+  const effectiveSunit = rawSunit && rawSunit !== defaultSunit ? rawSunit : undefined;
+  if (effectiveSunit) {
+    params.set("sunit", effectiveSunit);
   }
 
   return params;
@@ -731,10 +772,11 @@ export function resolveCalculatorState(
     }
   }
 
-  // Parse inverse lookup params (imode, lookups, iunit)
-  const imodeRaw = t.get("imode");
-  const imode: InverseMode | undefined =
-    imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+  // Parse inverse lookup params (calc → imode, lookups, runit/sunit → iunit).
+  // Canonical wire params are `calc=`/`runit=`/`sunit=`; the retired
+  // `imode=`/`iunit=` (shipped before issue #841) are accepted as a fallback
+  // when the canonical tokens are absent — see §3.4.
+  const imode: InverseMode | undefined = resolveImodeToken(t.get("calc"), t.get("imode"));
 
   let lookups: InverseLookupUrlRow[] | undefined;
   let iunit: string | undefined;
@@ -756,12 +798,15 @@ export function resolveCalculatorState(
       }
     }
 
-    // Validate and default iunit based on imode
-    const iunitRaw = t.get("iunit") ?? undefined;
+    // Validate and default iunit based on imode. `runit=` (csda) / `sunit=`
+    // (stp, same variable as the shared Stopping Power column unit above)
+    // take precedence over the retired `iunit=`.
     if (imode === "csda") {
-      iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
+      const runitRaw = t.get("runit") ?? t.get("iunit") ?? undefined;
+      iunit = runitRaw && VALID_CSDA_MASTER_UNITS.has(runitRaw) ? runitRaw : "cm";
     } else if (imode === "stp") {
-      iunit = iunitRaw && VALID_STP_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "kev-um";
+      const sunitRaw = sunit ?? t.get("iunit") ?? undefined;
+      iunit = sunitRaw && VALID_STP_MASTER_UNITS.has(sunitRaw) ? sunitRaw : "kev-um";
     }
 
     // Assign default unit to rows that don't have per-row suffix

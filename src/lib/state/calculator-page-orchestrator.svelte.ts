@@ -258,11 +258,27 @@ export class CalculatorPageOrchestrator {
 
         this.calcState.setMasterUnit(urlState.masterUnit);
 
-        // Restore the stopping-power output unit from the URL (`sunit=`).
-        // An explicit but invalid token falls back to the default; an absent
-        // parameter leaves the shared override unset so the aggregate-state default wins.
+        // The active Energy→/Range→/STP→ tab and its row(s) are shared between
+        // Basic and Advanced (#840) — restored regardless of mode. Decoded here
+        // (rather than after the stopping-power unit restore below) so a
+        // legacy `imode=stp&iunit=` link (shipped before #841) can also seed
+        // the shared `sunit=` output unit.
+        const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
+
+        // Restore the stopping-power output unit from the URL. Canonical wire
+        // param is `sunit=`, shared with calc=inverse-stp's master unit
+        // (§3.4); a legacy `imode=stp&iunit=` link without an explicit
+        // `sunit=` falls back to the resolved inverse-mode unit. An explicit
+        // but invalid token falls back to the default; no explicit unit at
+        // all leaves the shared override unset so the aggregate-state default wins.
+        const legacyStpIunit =
+          inverseMode?.imode === "stp" && currentSearchParams.has("iunit")
+            ? inverseMode.iunit
+            : undefined;
         if (currentSearchParams.has("sunit")) {
           stpOutputUnit.set(tokenToStpUnit(urlState.sunit ?? ""));
+        } else if (legacyStpIunit) {
+          stpOutputUnit.set(tokenToStpUnit(legacyStpIunit));
         } else {
           stpOutputUnit.set(null);
         }
@@ -285,9 +301,6 @@ export class CalculatorPageOrchestrator {
           });
         }
 
-        // The active Energy→/Range→/STP→ tab and its row(s) are shared between
-        // Basic and Advanced (#840) — restored regardless of mode.
-        const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
         if (inverseMode) {
           this.inverseLookupState!.setActiveTab(inverseMode.imode);
           if (inverseMode.lookups && inverseMode.lookups.length > 0) {

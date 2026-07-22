@@ -798,8 +798,11 @@ inputs and results.
 > Basic mode too, rendering the simplified single-row card described in
 > [Basic-mode tab layouts](#basic-mode-tab-layouts) instead of the Advanced
 > table. This section is a summary; [`shareable-urls.md`](shareable-urls.md)
-> and its formal companion are authoritative, including a note there on the
-> as-shipped `imode=`/`iunit=` param names for this field.
+> and its formal companion are authoritative.
+>
+> **Issue #841:** `calc=`/`runit=`/`sunit=` are now emitted/read natively —
+> the retired `imode=`/`iunit=` names are accepted on decode only, as a
+> fallback for links shared before this fix.
 
 ### Mixed-Unit URL Encoding
 

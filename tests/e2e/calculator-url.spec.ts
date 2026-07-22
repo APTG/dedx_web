@@ -62,11 +62,12 @@ test.describe("Calculator URL sync", () => {
     expect(page.url()).toContain("500:keV");
   });
 
-  test("Basic mode: a shared calc=range (as-shipped imode=csda) link stays on the Range tab and round-trips without mode=advanced", async ({
+  test("Basic mode: a legacy imode=csda link stays on the Range tab and re-encodes to canonical calc=range without mode=advanced", async ({
     page,
   }) => {
-    // Issue #840: calc=/lookups=/runit= (as-shipped: imode=/lookups=/iunit=)
-    // are no longer advanced-mode-only.
+    // Issue #840: calc=/lookups=/runit= are no longer advanced-mode-only.
+    // Issue #841: the retired imode=/ivalues=/iunit= names (still accepted
+    // on read for backward compat) are re-encoded to calc=/lookups=/runit=.
     await page.goto("/calculator?particle=1&material=276&imode=csda&ivalues=7.718:cm");
     await page.waitForSelector('[data-testid="basic-range-card"]', { timeout: 10000 });
 
@@ -76,8 +77,9 @@ test.describe("Calculator URL sync", () => {
     );
     await expect(page.locator('[data-testid="basic-range-input"]')).toHaveValue("7.718 cm");
 
-    await waitForUrl(page, "imode=csda");
+    await waitForUrl(page, "calc=range");
     expect(page.url()).not.toContain("mode=advanced");
+    expect(page.url()).not.toContain("imode=");
   });
 });
 
