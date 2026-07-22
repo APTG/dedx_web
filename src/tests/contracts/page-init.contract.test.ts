@@ -101,3 +101,20 @@ describe("Page-init contract — urlv negotiation", () => {
     expect(source).toContain("negotiateVersion");
   });
 });
+
+describe("Page-init contract — Basic-mode program-discard toast (#869)", () => {
+  it("calculator orchestrator announces feedback when hydrating an explicit program in Basic mode", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
+    // Guards against silently regressing to the pre-#869 behavior where a
+    // Basic-mode link's `program=` was discarded by setupModeFallbacks with
+    // no user-visible explanation.
+    expect(source).toContain("announceProgramFeedback");
+    expect(source).toContain("urlState.programId !== null");
+  });
+
+  it("calculator/+page.svelte mounts a NoticeToast bound to orchestrator.programFeedback", () => {
+    const source = readSource(CALCULATOR_PAGE);
+    expect(source).toContain("NoticeToast");
+    expect(source).toContain("orchestrator.programFeedback");
+  });
+});

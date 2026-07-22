@@ -32,6 +32,7 @@
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { externalDataService } from "$lib/external-data/service";
 
+  import NoticeToast from "$lib/components/notice-toast.svelte";
   import PageErrorFallback from "$lib/components/layout/page-error-fallback.svelte";
   import AdvancedHint from "$lib/components/calculator/advanced-hint.svelte";
   import SharedCompoundAlert from "$lib/components/calculator/shared-compound-alert.svelte";
@@ -472,4 +473,12 @@
       {/if}
     </div>
   {/if}
+
+  <!-- Basic-mode "link's program was ignored" toast (#869). -->
+  <NoticeToast
+    feedback={orchestrator.programFeedback}
+    onDismiss={() => (orchestrator.programFeedback = null)}
+    testId="calculator-notice-toast"
+    position="top"
+  />
 </div>

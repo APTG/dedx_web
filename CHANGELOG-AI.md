@@ -17,6 +17,24 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-22 — **entity-selection / #869**: Follow-up to the Basic-mode `program=`
+  toast — manual local verification found it easy to miss at the bottom of the
+  screen. Added an optional `position: "top" | "bottom"` prop to `notice-toast.svelte`
+  (default `"bottom"`, preserving the Plot page's existing Add Series confirmation
+  placement) and switched the calculator page's usage to `position="top"`. (Claude
+  Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-issue-869-basic-mode-program-toast.md)
+- 2026-07-22 — **CI / guard-forbidden-files**: Fixed the `workflow-guards` job's push-event
+  path failing with "Invalid revision range" after rebasing and force-pushing PR #870's
+  branch onto an updated `master`. Root cause: for `push` events the guard diffs
+  `github.event.before..github.sha`, but a force-push after rebase leaves `before`
+  pointing at a commit that's no longer reachable from any ref, so `actions/checkout`
+  (which only fetches ref-reachable history) never fetches it — `git diff` then fails
+  outright instead of just misbehaving. Extended the existing "initial push" fallback
+  (previously triggered only by the all-zero SHA) to also trigger when `git cat-file -e`
+  can't resolve `before` locally, falling back to the merge-base with the default branch
+  in both cases. (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-ci-guard-force-push-fix.md)
 - 2026-07-22 — **entity-selection / #871**: Fixed Auto-select resolving a program from
   particle+material alone, ignoring energy — a heavy ion below a chain candidate's energy
   floor (e.g. Boron below ICRU 73's 0.025 MeV/nucleon floor) got stuck reporting "out of
@@ -26,6 +44,23 @@ Use one bullet per session (newest first):
   current one's range excludes it; energy-blind fallback is preserved when no hint/service
   is available. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-22-auto-select-energy-aware.md)
+- 2026-07-22 — **entity-selection / #869**: Investigated a live report that
+  aidedx (sister chat-assistant project) links to a calculator URL
+  (`?particle=5&material=14&program=6&energies=220.5:keV&eunit=MeV`) that
+  doesn't reproduce the MSTAR-based answer it displayed. Root cause was
+  layered: aidedx's link used the wrong program ID (6 = ICRU 73, not MSTAR = 4)
+  and omitted `mode=advanced`, and dedx_web's Basic mode always silently
+  discards an explicit `program=` from the URL with no explanation (#816
+  behavior). Filed [APTG/aidedx#116](https://github.com/APTG/aidedx/issues/116)
+  and [APTG/dedx_web#869](https://github.com/APTG/dedx_web/issues/869), then
+  fixed the dedx_web side: `calculator-page-orchestrator.svelte.ts` now fires a
+  toast ("Basic mode ignores the link's program; using auto-select.") when
+  this happens. Generalized the Plot page's `plot-toast.svelte` into a shared
+  `notice-toast.svelte` (added a `testId` prop) instead of duplicating its
+  toast logic for the Calculator page. Verified end-to-end with a new
+  Playwright spec against a real build using the exact reported URL. (Claude
+  Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-issue-869-basic-mode-program-toast.md)
 - 2026-07-22 — **CI / screenshots / #865**: Fixed the documentation-screenshots workflow firing an auto-PR with no visible UI change — root cause was Chromium's font-fallback resolution drifting between Playwright version bumps, since the app has no self-hosted font. Pinned self-hosted Inter (sans) and JetBrains Mono (mono) fonts, scoped to the screenshot test only, via Tailwind's own `--font-sans`/`--font-mono` theme variables so numeric result cells keep their real monospace styling. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-22-screenshot-font-drift.md)
 - 2026-07-21 — **entity-selection / #861**: Fixed a bug reported from live use: selecting an

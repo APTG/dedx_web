@@ -6,7 +6,7 @@
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import PlotToolbar from "$lib/components/plot-toolbar.svelte";
-  import PlotToast from "$lib/components/plot-toast.svelte";
+  import NoticeToast from "$lib/components/notice-toast.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
@@ -396,9 +396,10 @@
     {/if}
 
     <!-- Add-series confirmation toast (#812). -->
-    <PlotToast
+    <NoticeToast
       feedback={orchestrator.seriesFeedback}
       onDismiss={() => (orchestrator.seriesFeedback = null)}
+      testId="plot-toast"
     />
   </div>
 {/if}

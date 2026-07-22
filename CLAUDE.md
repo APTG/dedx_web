@@ -59,6 +59,11 @@ WASM binaries are not built in CI by default for unit tests — the mock in
 E2E tests need `static/wasm/libdedx.mjs` + `static/wasm/libdedx.wasm`; download
 from the latest successful `build-wasm` CI artifact if missing locally.
 
+**Browser verification**: do not use the Claude in Chrome browser extension for
+this project. To verify UI changes, use Playwright (`pnpm exec playwright test`,
+or a throwaway script under `tests/e2e/`) instead of the `claude-in-chrome`
+skill/extension.
+
 ---
 
 ## WASM

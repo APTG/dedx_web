@@ -2,18 +2,27 @@
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import X from "@lucide/svelte/icons/x";
 
-  // Transient confirmation toast shown after Add Series (#812). Driven by a
-  // `{ text, token }` signal from the parent: a fresh object (new token) re-arms
-  // the toast even when the text repeats. It is its own `role="status"` live
-  // region, so screen readers announce the text when it appears.
+  // Transient confirmation toast, originally added for Add Series (#812) and
+  // reused by the Calculator page for the Basic-mode program notice (#869).
+  // Driven by a `{ text, token }` signal from the parent: a fresh object (new
+  // token) re-arms the toast even when the text repeats. It is its own
+  // `role="status"` live region, so screen readers announce the text when it
+  // appears.
   let {
     feedback,
     onDismiss,
     durationMs = 4000,
+    testId = "notice-toast",
+    position = "bottom",
   }: {
     feedback: { text: string; token: number } | null;
     onDismiss: () => void;
     durationMs?: number;
+    testId?: string;
+    // "top" is for notices the user needs to actually notice (e.g. a silently
+    // discarded URL param, #869) — bottom-of-screen confirmations are easy to
+    // miss below the fold on a long calculator/plot page.
+    position?: "top" | "bottom";
   } = $props();
 
   let visibleText = $state<string | null>(null);
@@ -58,8 +67,10 @@
 
 {#if visibleText}
   <div
-    class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
-    data-testid="plot-toast"
+    class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4 {position === 'top'
+      ? 'top-4'
+      : 'bottom-4'}"
+    data-testid={testId}
   >
     <div
       role="status"
