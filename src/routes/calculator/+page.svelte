@@ -479,5 +479,6 @@
     feedback={orchestrator.programFeedback}
     onDismiss={() => (orchestrator.programFeedback = null)}
     testId="calculator-notice-toast"
+    position="top"
   />
 </div>

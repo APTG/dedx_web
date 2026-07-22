@@ -97,4 +97,19 @@ describe("NoticeToast (#812, #869)", () => {
     expect(screen.getByTestId("plot-toast")).toBeInTheDocument();
     expect(screen.queryByTestId("notice-toast")).toBeNull();
   });
+
+  it('defaults to bottom placement, and moves to top when position="top" (#869)', () => {
+    const { rerender } = render(NoticeToast, {
+      props: { feedback: { text: "Added series", token: 1 }, onDismiss: () => {} },
+    });
+    expect(screen.getByTestId("notice-toast")).toHaveClass("bottom-4");
+
+    rerender({
+      feedback: { text: "Basic mode ignores the link's program", token: 2 },
+      onDismiss: () => {},
+      position: "top",
+    });
+    flushSync();
+    expect(screen.getByTestId("notice-toast")).toHaveClass("top-4");
+  });
 });

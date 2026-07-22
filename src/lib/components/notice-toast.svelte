@@ -13,11 +13,16 @@
     onDismiss,
     durationMs = 4000,
     testId = "notice-toast",
+    position = "bottom",
   }: {
     feedback: { text: string; token: number } | null;
     onDismiss: () => void;
     durationMs?: number;
     testId?: string;
+    // "top" is for notices the user needs to actually notice (e.g. a silently
+    // discarded URL param, #869) — bottom-of-screen confirmations are easy to
+    // miss below the fold on a long calculator/plot page.
+    position?: "top" | "bottom";
   } = $props();
 
   let visibleText = $state<string | null>(null);
@@ -62,7 +67,9 @@
 
 {#if visibleText}
   <div
-    class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
+    class="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4 {position === 'top'
+      ? 'top-4'
+      : 'bottom-4'}"
     data-testid={testId}
   >
     <div
