@@ -43,22 +43,33 @@ sw.addEventListener("fetch", (event) => {
   // through untouched — this SW only manages the app's own static assets.
   if (url.origin !== sw.location.origin) return;
 
+  // One consistent cache key (the bare pathname, no query string) for every
+  // read and write below. This is a fully prerendered static SPA, so e.g.
+  // /calculator?particle=5 must resolve to the same cached HTML as
+  // /calculator — the query string is client-side app state, not a distinct
+  // server resource. A previous version keyed lookups by `url.pathname` but
+  // writes by `event.request`, so a request that fell through to the network
+  // once could never be served from cache again.
+  const cacheKey = url.pathname;
+
   async function respond(): Promise<Response> {
     const cache = await caches.open(CACHE);
 
-    if (ASSETS.includes(url.pathname)) {
-      const cached = await cache.match(url.pathname);
+    if (ASSETS.includes(cacheKey)) {
+      const cached = await cache.match(cacheKey);
       if (cached) return cached;
     }
 
     try {
       const response = await fetch(event.request);
       if (response.status === 200) {
-        cache.put(event.request, response.clone());
+        // Extend the fetch event's lifetime until the write finishes instead
+        // of letting the SW risk being terminated mid-write.
+        event.waitUntil(cache.put(cacheKey, response.clone()));
       }
       return response;
     } catch (err) {
-      const cached = await cache.match(event.request);
+      const cached = await cache.match(cacheKey);
       if (cached) return cached;
       throw err;
     }

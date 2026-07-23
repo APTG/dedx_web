@@ -196,8 +196,13 @@ describe("registerServiceWorker (#881)", () => {
 
     const { registerServiceWorker, applyServiceWorkerUpdate } =
       await import("$lib/pwa/register-service-worker");
+    const { updateAvailable } = await import("$lib/pwa/update-state.svelte");
     registerServiceWorker();
-    await vi.waitFor(() => expect(waiting).toBeTruthy());
+    // `waiting` is truthy synchronously (it's just the mock object) — wait
+    // for the actual async registration.then() handler to run instead,
+    // otherwise this passes by accident of microtask timing rather than by
+    // genuinely waiting for waitingWorker to be set.
+    await vi.waitFor(() => expect(updateAvailable.value).toBe(true));
 
     applyServiceWorkerUpdate();
     expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
