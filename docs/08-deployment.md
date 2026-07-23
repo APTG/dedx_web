@@ -207,9 +207,10 @@ The WASM files (`libdedx.mjs`, `libdedx.wasm`) are served un-hashed and
 therefore subject to the 10-minute `max-age`. After that, the browser
 re-validates via ETag (a `304 Not Modified` response is cheap).
 
-A Service Worker for offline / cache-first WASM loading is **not implemented
-in v1**. See [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)
-for the reasoning.
+A Service Worker (`src/service-worker.ts`) now provides cache-first offline
+loading for the WASM files and the rest of the app shell (issue #881). See
+[09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)
+for the caching/versioning details and the update-prompt design.
 
 ---
 
