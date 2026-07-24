@@ -17,6 +17,18 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-24 — **ci-tooling / #880**: Fixed the `docs: update screenshots`
+  auto-PR firing on unrelated master pushes with no real UI change. Root
+  cause: the build-info badge's mask box was derived from its own dynamic
+  text (commit hash + date), which renders at a slightly different pixel
+  width every build in the proportional Inter font, shifting the mask's
+  right edge by ~2px between runs. Replaced masking with a fixed placeholder
+  string written into the badge before the screenshot, so the rendered
+  pixels are now identical regardless of the real build metadata — verified
+  byte-for-byte identical output across two builds with different commit
+  hashes. (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-24-screenshot-badge-mask-jitter.md)
+
 - 2026-07-22 — **shareable-urls / #841**: Reconciled the shipped
   `imode=`/`iunit=` calculator URL params with the v3-canonical
   `calc=`/`runit=`/`sunit=` names documented in `shareable-urls-formal.md`.
