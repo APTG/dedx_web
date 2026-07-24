@@ -17,6 +17,18 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-24 — **deps / #879**: Closed dependabot PR #879 (`typescript`
+  6.0.3 → 7.0.2) — TS 7.0 is Microsoft's new native (Go-ported) compiler,
+  and the latest stable `typescript-eslint` (8.65.0) hard-errors against it
+  at import time (`peerDependencies` caps at `<6.1.0`; tracked upstream in
+  typescript-eslint#10940, still open). No workaround exists on our side —
+  the guard fires before any of our eslint config runs. Added a dependabot
+  `ignore` rule for `typescript >=7.0.0` in `.github/dependabot.yml` so the
+  same broken bump doesn't reopen daily; removing it is a one-line revert
+  once typescript-eslint ships TS 7 support. (Claude Sonnet 5 via Claude
+  Code)
+  - **Log:** [log](docs/ai-logs/2026-07-24-typescript-7-eslint-incompatible.md)
+
 - 2026-07-24 — **ci-tooling / #880**: Fixed the `docs: update screenshots`
   auto-PR firing on unrelated master pushes with no real UI change. Root
   cause: the build-info badge's mask box was derived from its own dynamic

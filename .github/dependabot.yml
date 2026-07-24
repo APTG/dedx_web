@@ -39,6 +39,15 @@ updates:
         dependency-type: "production"
         patterns:
           - "*"
+    # typescript-eslint has no release supporting TypeScript 7's native
+    # (Go-ported) compiler yet — importing it against TS >=7 throws
+    # unconditionally (peerDependencies caps at <6.1.0). Tracked upstream:
+    # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+    # Remove once a typescript-eslint release supports TS 7.
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
+
     # Add reviewers
     reviewers:
       - "grzanka"
