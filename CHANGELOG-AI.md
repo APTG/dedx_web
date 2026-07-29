@@ -17,13 +17,6 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-<<<<<<< HEAD
-- 2026-07-23 — **pwa / #881**: Added a Service Worker so dedx_web is a fully
-  installable, offline-capable PWA (cache-first app shell + `libdedx` WASM,
-  versioned cache keyed to the build, "update available" reload prompt
-  instead of a silent asset swap). (Claude Sonnet 5 via Claude Code)
-  - **Log:** [log](docs/ai-logs/2026-07-23-issue-881-pwa-service-worker.md)
-=======
 - 2026-07-24 — **ci-tooling / #880**: Fixed the `docs: update screenshots`
   auto-PR firing on unrelated master pushes with no real UI change. Root
   cause: the build-info badge's mask box was derived from its own dynamic
@@ -35,8 +28,11 @@ Use one bullet per session (newest first):
   byte-for-byte identical output across two builds with different commit
   hashes. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-24-screenshot-badge-mask-jitter.md)
-
->>>>>>> origin/master
+- 2026-07-23 — **pwa / #881**: Added a Service Worker so dedx_web is a fully
+  installable, offline-capable PWA (cache-first app shell + `libdedx` WASM,
+  versioned cache keyed to the build, "update available" reload prompt
+  instead of a silent asset swap). (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-23-issue-881-pwa-service-worker.md)
 - 2026-07-22 — **shareable-urls / #841**: Reconciled the shipped
   `imode=`/`iunit=` calculator URL params with the v3-canonical
   `calc=`/`runit=`/`sunit=` names documented in `shareable-urls-formal.md`.
