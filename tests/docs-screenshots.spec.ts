@@ -16,8 +16,8 @@ import { fileURLToPath } from "node:url";
 //
 // Determinism:
 //   - animations / transitions / caret are frozen via injected CSS
-//   - the dynamic build-info badge (commit hash + date) is masked so
-//     the images do not churn on every commit
+//   - the dynamic build-info badge (commit hash + date) is overwritten with
+//     a fixed placeholder so the images do not churn on every commit
 //
 // Output: static/screenshots/<name>-(desktop|mobile).png
 // ─────────────────────────────────────────────────────────────────
@@ -104,18 +104,18 @@ async function preparePage(page: Page, path: string): Promise<void> {
   // in the gap before it renders. Without this wait the footer is one ~16px line
   // shorter on some runs, and fullPage:true bakes that into the PNG dimensions,
   // churning the auto-generated screenshots PR (#755).
-  await page.getByText("Deployed:").waitFor({ state: "visible" });
-}
-
-/**
- * The build-info badge (commit hash, build date, branch) changes every build.
- * Masking just that span — rather than the whole footer — keeps the committed
- * PNGs stable without hiding the static footer text. The badge only renders
- * once deploy.json loads, so fall back to no mask when it is absent.
- */
-async function dynamicMasks(page: Page) {
   const buildInfo = page.getByText("Deployed:");
-  return (await buildInfo.count()) > 0 ? [buildInfo] : [];
+  await buildInfo.waitFor({ state: "visible" });
+  // The badge's real text (commit hash + today's date) changes on every build.
+  // It used to be hidden with a solid-color mask instead of frozen, but Inter
+  // is a proportional font: different hash/date strings render at slightly
+  // different pixel widths, so the mask's right edge shifted by a couple of
+  // pixels between runs and churned the auto-generated screenshots PR even
+  // when nothing in the app changed (#880). Overwriting with a fixed string
+  // makes the rendered pixels identical on every run — no mask needed.
+  await buildInfo.evaluate((el) => {
+    el.textContent = "Deployed: 0000000 · 2000-01-01 · master";
+  });
 }
 
 interface Shot {
@@ -153,8 +153,6 @@ for (const shot of SHOTS) {
       await page.screenshot({
         path: `${OUT_DIR}/${shot.name}-${device}.png`,
         fullPage: true,
-        mask: await dynamicMasks(page),
-        maskColor: "#e5e7eb",
       });
     });
   }
