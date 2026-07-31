@@ -708,19 +708,19 @@ These are the C functions that must be exported in the Emscripten build
 
 ### 4.4 From `dedx.h` (metadata)
 
-| C Function                                            | Used by                    | Notes                                |
-| ----------------------------------------------------- | -------------------------- | ------------------------------------ |
-| `dedx_get_program_name(prog)`                         | `getPrograms()`            | Returns `const char*`                |
-| `dedx_get_program_version(prog)`                      | `getPrograms()`            | Returns `const char*`                |
-| `dedx_get_ion_name(ion)`                              | `getParticles()`           | Returns `const char*`                |
-| `dedx_get_material_name(mat)`                         | `getMaterials()`           | Returns `const char*`                |
-| `dedx_get_min_energy(prog, ion)`                      | `getMinEnergy()`           | Returns `float` (MeV/nucl)           |
-| `dedx_get_max_energy(prog, ion)`                      | `getMaxEnergy()`           | Returns `float` (MeV/nucl)           |
-| `dedx_get_error_code(buf, err)`                       | `LibdedxError` constructor | Error code → string                  |
-| `dedx_get_version_string()`                           | `getVersion()`             | Returns `const char*`                |
-| `dedx_get_i_value(target, err*)`                      | `getIValue()`              | Returns `float` (eV)                 |
-| `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()`         | Compound composition                 |
-| `dedx_internal_read_density(material, err*)`          | `getDensity()`             | Internal fn, returns `float` (g/cm³) |
+| C Function                                            | Used by                          | Notes                                                                                        |
+| ----------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------- |
+| `dedx_get_program_name(prog)`                         | `getPrograms()`                  | Returns `const char*`                                                                        |
+| `dedx_get_program_version(prog)`                      | `getPrograms()`                  | Returns `const char*`                                                                        |
+| `dedx_get_ion_name(ion)`                              | `getParticles()`                 | Returns `const char*`                                                                        |
+| `dedx_get_material_name(mat)`                         | `getMaterials()`                 | Returns `const char*`                                                                        |
+| `dedx_get_min_energy(prog, ion)`                      | `getMinEnergy()`                 | Returns `float` (MeV/nucl)                                                                   |
+| `dedx_get_max_energy(prog, ion)`                      | `getMaxEnergy()`                 | Returns `float` (MeV/nucl)                                                                   |
+| `dedx_get_error_code(buf, err)`                       | `LibdedxError` constructor       | Error code → string                                                                          |
+| `dedx_get_version_string()`                           | `getVersion()`                   | Returns `const char*`                                                                        |
+| `dedx_get_i_value(target, err*)`                      | `getIValue()`                    | Returns `float` (eV)                                                                         |
+| `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()`               | Compound composition                                                                         |
+| `dedx_get_density(material, err*)`                    | `getDensity()`, `getMaterials()` | Returns `float` (g/cm³); public API (formerly a local `wasm/dedx_extra.h` wrapper — see §11) |
 
 ### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §11)
 
@@ -730,7 +730,6 @@ These wrappers live in this repository and are compiled alongside libdedx.
 | ------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `dedx_get_ion_nucleon_number(ion)`          | `getNucleonNumber()`, `getParticles()` | Returns mass number (A) for Z=1..112                                                                                                                                                                                                                                                                                                                                                                       |
 | `dedx_get_ion_atom_mass(ion)`               | `getAtomicMass()`, `getParticles()`    | Returns atomic mass in u for Z=1..112                                                                                                                                                                                                                                                                                                                                                                      |
-| `dedx_get_density(material, err*)`          | `getDensity()`, `getMaterials()`       | Returns density in g/cm³                                                                                                                                                                                                                                                                                                                                                                                   |
 | `dedx_target_is_gas(target)`                | `isGasByDefault()`, `getMaterials()`   | Returns 1 if gaseous by default                                                                                                                                                                                                                                                                                                                                                                            |
 | `dedx_get_inverse_stp_flat(...)`            | `getInverseStp()`                      | Flat wrapper for inverse STP (no JS-side workspace/config pointers)                                                                                                                                                                                                                                                                                                                                        |
 | `dedx_get_inverse_csda_flat(...)`           | `getInverseCsda()`                     | Flat wrapper for inverse CSDA (no JS-side workspace/config pointers)                                                                                                                                                                                                                                                                                                                                       |
@@ -1155,9 +1154,15 @@ in the public API headers. We forward-declare them in our local wrapper.
 | ----------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
 | `int dedx_get_ion_nucleon_number(int ion)`                  | `dedx_internal_get_nucleon()`   | Mass number (A) for Z=1..112, or -1 on error                                   |
 | `float dedx_get_ion_atom_mass(int ion)`                     | `dedx_internal_get_atom_mass()` | Atomic mass in u (e.g., 1.00794 for H), or -1 on error                         |
-| `float dedx_get_density(int material, int *err)`            | `dedx_internal_read_density()`  | Density in g/cm³                                                               |
 | `int dedx_target_is_gas(int target)`                        | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise                                           |
 | `const char *dedx_get_material_friendly_name(int material)` | `dedx_get_material_name()`      | Human-friendly name; override table for key materials + fallback to raw C name |
+
+> **Note:** `dedx_get_density(int material, int *err)` used to be a local wrapper
+> here too, but libdedx promoted it (and `dedx_get_nucleon_number`,
+> `dedx_get_atom_mass`, `dedx_is_gas`) to its own public API in `include/dedx.h`.
+> The JS-facing symbol name is unchanged, but it is now linked straight from
+> `libdedx.a` — keeping a same-named definition in `dedx_extra.c` would collide
+> with it at link time, so it was removed from this file.
 
 ### 11.2 Example Implementation Sketch
 
@@ -1168,7 +1173,6 @@ in the public API headers. We forward-declare them in our local wrapper.
 
 int   dedx_get_ion_nucleon_number(int ion);
 float dedx_get_ion_atom_mass(int ion);
-float dedx_get_density(int material, int *err);
 int   dedx_target_is_gas(int target);
 
 #endif
@@ -1181,7 +1185,6 @@ int   dedx_target_is_gas(int target);
 /* Forward-declare internal libdedx functions (linked from libdedx objects) */
 extern int   dedx_internal_get_nucleon(int id, int *err);
 extern float dedx_internal_get_atom_mass(int id, int *err);
-extern float dedx_internal_read_density(int material, int *err);
 extern int   dedx_internal_target_is_gas(int target);
 
 int dedx_get_ion_nucleon_number(int ion) {
@@ -1194,14 +1197,13 @@ float dedx_get_ion_atom_mass(int ion) {
     return dedx_internal_get_atom_mass(ion, &err);
 }
 
-float dedx_get_density(int material, int *err) {
-    return dedx_internal_read_density(material, err);
-}
-
 int dedx_target_is_gas(int target) {
     return dedx_internal_target_is_gas(target);
 }
 ```
+
+`dedx_get_density(int material, int *err)` is not part of this local wrapper —
+it is linked directly from libdedx's own public API (`include/dedx.h`).
 
 These files will be created during Stage 3 (WASM Build Pipeline). The Emscripten
 build script compiles them together with the libdedx `.c` sources.
