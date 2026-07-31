@@ -17,6 +17,17 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-31 — **wasm-build / PR #897**: Fixed `WASM Build + Contract
+Verification` CI failure on the libdedx `22e43a9` → `d5bf0cd` dependabot
+  bump. libdedx promoted `dedx_get_density()` (along with
+  `dedx_get_nucleon_number`, `dedx_get_atom_mass`, `dedx_is_gas`) to its
+  public API, colliding at link time with this repo's own same-named thin
+  wrapper in `wasm/dedx_extra.c`. Removed the now-redundant local
+  `dedx_get_density` wrapper so the symbol resolves from `libdedx.a`
+  directly; updated `docs/06-wasm-api-contract.md` §11 and §4 to match.
+  (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-31-wasm-build-897.md)
+
 - 2026-07-24 — **ci-tooling / #880**: Fixed the `docs: update screenshots`
   auto-PR firing on unrelated master pushes with no real UI change. Root
   cause: the build-info badge's mask box was derived from its own dynamic
