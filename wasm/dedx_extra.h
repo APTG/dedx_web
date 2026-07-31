@@ -9,8 +9,11 @@ extern "C" {
 
 int         dedx_get_ion_nucleon_number(int ion);
 float       dedx_get_ion_atom_mass(int ion);
-float       dedx_get_density(int material, int *err);
 int         dedx_target_is_gas(int target);
+
+/* dedx_get_density(int material, int *err) is no longer defined here — libdedx
+ * promoted it to its public API (see dedx.h), so it comes straight from
+ * libdedx.a and would otherwise collide with this wrapper at link time. */
 
 /* Flat wrappers — handle workspace/config lifecycle internally.
  * These are the WASM-exported entry points for inverse lookups.
