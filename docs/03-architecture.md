@@ -142,6 +142,10 @@ required because GitHub Pages may serve the app from a sub-path
 `site.webmanifest` declares the app name, `theme_color`, `background_color`,
 and icon references for Android home screen and PWA install prompts.
 
+Together with `src/service-worker.ts` (cache-first offline loading, issue
+#881 — see [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)),
+this makes the app a fully installable, offline-capable PWA.
+
 ---
 
 ### Naming conventions

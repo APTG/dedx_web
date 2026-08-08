@@ -17,6 +17,12 @@ const config = {
     paths: {
       base: basePath,
     },
+    serviceWorker: {
+      // Registered manually from src/lib/pwa/register-service-worker.ts so we
+      // can show an "update available" prompt instead of swapping assets
+      // silently under a running session (see docs/09-non-functional-requirements.md §3.1).
+      register: false,
+    },
     alias: {
       $lib: "./src/lib",
     },

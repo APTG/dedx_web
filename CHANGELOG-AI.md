@@ -39,7 +39,11 @@ Verification` CI failure on the libdedx `22e43a9` → `d5bf0cd` dependabot
   byte-for-byte identical output across two builds with different commit
   hashes. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-24-screenshot-badge-mask-jitter.md)
-
+- 2026-07-23 — **pwa / #881**: Added a Service Worker so dedx_web is a fully
+  installable, offline-capable PWA (cache-first app shell + `libdedx` WASM,
+  versioned cache keyed to the build, "update available" reload prompt
+  instead of a silent asset swap). (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-23-issue-881-pwa-service-worker.md)
 - 2026-07-22 — **shareable-urls / #841**: Reconciled the shipped
   `imode=`/`iunit=` calculator URL params with the v3-canonical
   `calc=`/`runit=`/`sunit=` names documented in `shareable-urls-formal.md`.

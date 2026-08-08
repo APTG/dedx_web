@@ -18,6 +18,12 @@
     performCsvDownload,
   } from "$lib/state/export.svelte";
   import BuildInfoBadge from "$lib/components/build-info-badge.svelte";
+  import PwaUpdateBanner from "$lib/components/pwa-update-banner.svelte";
+  import {
+    registerServiceWorker,
+    applyServiceWorkerUpdate,
+  } from "$lib/pwa/register-service-worker";
+  import { updateAvailable } from "$lib/pwa/update-state.svelte";
 
   let { children } = $props();
   let pathname = $derived(page.url.pathname);
@@ -72,10 +78,15 @@
       }
     };
   });
+
+  $effect(() => {
+    registerServiceWorker();
+  });
 </script>
 
 <div class="min-h-screen bg-background">
   <a href="#main-content" class="skip-link">Skip to content</a>
+  <PwaUpdateBanner visible={updateAvailable.value} onReload={applyServiceWorkerUpdate} />
   <header class="border-b bg-card" data-testid="app-header">
     <div class="container mx-auto px-4">
       <!-- Row 1: logo + secondary controls (mode toggle, export, share) -->

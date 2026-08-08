@@ -156,17 +156,24 @@ but adds a network hop on every session restart after the 10-minute window.
 For a scientific tool that is not used in rapid-session bursts, this is
 acceptable.
 
-**Service Worker — not implemented in v1.** A Service Worker with a
-cache-first strategy for `static/wasm/` assets would eliminate the re-validation
-hop entirely and enable offline use. Implementing one is deferred: offline
-support is not a v1 requirement, and a buggy SW can serve stale WASM after a
-data-table update (physics data changes between libdedx releases). If a SW is
-added in a future stage, it must include a versioned cache key that is
-invalidated on every deployment.
+**Service Worker — implemented (issue #881).** `src/service-worker.ts` applies
+a cache-first strategy to the build output, `static/wasm/` assets, and all
+prerendered pages, eliminating the re-validation hop and enabling full offline
+use after a first visit. The cache name is `cache-${version}`, where `version`
+is SvelteKit's `kit.version.name` (defaults to a build-time timestamp) — this
+is the versioned cache key the previous version of this note called for: a
+new deployment always gets a new cache name, and the `activate` handler
+deletes every other cache, so a stale WASM binary from a superseded
+data-table release can never linger. The SW is registered manually
+(`kit.serviceWorker.register: false` in `svelte.config.js`, registration in
+`src/lib/pwa/register-service-worker.ts`) rather than via SvelteKit's
+auto-registration, specifically so an update never swaps cached assets under
+a running session silently: a newly-installed worker sits in the `waiting`
+state until the user clicks "Reload to update" on the banner rendered by
+`src/lib/components/pwa-update-banner.svelte`.
 
-`site.webmanifest` is present (used for Android home-screen and PWA install
-prompts) but without a SW the app is not a full installable PWA in the Service
-Worker sense.
+`site.webmanifest` plus the Service Worker together make the app a fully
+installable, offline-capable PWA.
 
 ---
 
