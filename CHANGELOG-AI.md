@@ -17,6 +17,21 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-08-12 — **ci-tooling / PR #904**: Fixed the `Static Analysis (format,
+lint, check)` CI failure on the javascript-tooling dependabot bump.
+  typescript-eslint `8.66.0` does not yet support TypeScript 7 (the new
+  Go-based `tsgo` compiler, see
+  [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)),
+  so `eslint .` crashed immediately with "typescript-eslint does not support
+  TS 7.0" once dependabot bumped `typescript` `6.0.3` → `7.0.2` in the same
+  group. Pinned `typescript` back to `^6.0.3` while keeping the other 9
+  updates in the group (eslint, jsdom, playwright, etc.), regenerated
+  `pnpm-lock.yaml`, and added a dependabot `ignore` rule for `typescript
+
+  > =7.0.0` so it isn't re-proposed until typescript-eslint adds support.
+  > (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-08-12-ci-tooling-904.md)
+
 - 2026-07-31 — **wasm-build / PR #897**: Fixed `WASM Build + Contract
 Verification` CI failure on the libdedx `22e43a9` → `d5bf0cd` dependabot
   bump. libdedx promoted `dedx_get_density()` (along with

@@ -39,6 +39,11 @@ updates:
         dependency-type: "production"
         patterns:
           - "*"
+    # typescript-eslint does not support TS 7 yet:
+    # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
     # Add reviewers
     reviewers:
       - "grzanka"
