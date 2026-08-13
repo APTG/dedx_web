@@ -17,6 +17,15 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-08-13 — **ci-tooling / PR #912**: Fixed `Static Analysis` and `E2E
+Tests` CI failures on the dependabot `@lucide/svelte` `1.30.0` → `1.31.0`
+  bump. Dependabot updated `package.json` but left the `specifier` field for
+  `@lucide/svelte` in `pnpm-lock.yaml` at `^1.30.0` (the resolved `version`
+  was already `1.31.0`), so `pnpm install --frozen-lockfile` rejected the
+  mismatch in every CI job. Regenerated `pnpm-lock.yaml` with
+  `pnpm install --no-frozen-lockfile` to sync the specifier; no other
+  dependency versions changed. (Claude Sonnet 5 via Claude Code)
+
 - 2026-07-31 — **wasm-build / PR #897**: Fixed `WASM Build + Contract
 Verification` CI failure on the libdedx `22e43a9` → `d5bf0cd` dependabot
   bump. libdedx promoted `dedx_get_density()` (along with
