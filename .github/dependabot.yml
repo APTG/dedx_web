@@ -39,6 +39,11 @@ updates:
         dependency-type: "production"
         patterns:
           - "*"
+    ignore:
+      # typescript-eslint doesn't support TS 7.0 yet:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     # Add reviewers
     reviewers:
       - "grzanka"
