@@ -132,6 +132,21 @@ describe("formatEnergyWithUnit", () => {
     const result = formatEnergyWithUnit(0.5, "MeV");
     expect(result).toBe("500.0 keV");
   });
+
+  test("trimTrailingZeros strips padding zeros: 0.001 MeV → '1 keV'", () => {
+    const result = formatEnergyWithUnit(0.001, "MeV", { trimTrailingZeros: true });
+    expect(result).toBe("1 keV");
+  });
+
+  test("trimTrailingZeros strips a partial fraction: 1200 MeV → '1.2 GeV'", () => {
+    const result = formatEnergyWithUnit(1200, "MeV", { trimTrailingZeros: true });
+    expect(result).toBe("1.2 GeV");
+  });
+
+  test("trimTrailingZeros leaves integer-valued formatting untouched: 100 MeV → '100 MeV'", () => {
+    const result = formatEnergyWithUnit(100, "MeV", { trimTrailingZeros: true });
+    expect(result).toBe("100 MeV");
+  });
 });
 
 describe("columnHeaderUnit", () => {

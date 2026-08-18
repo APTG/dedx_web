@@ -19,6 +19,10 @@ import { isCustomMaterial } from "$lib/utils/custom-compound-material";
 import type { ExternalDataService } from "$lib/external-data/service";
 import { asBuiltinParticle, asBuiltinMaterial } from "$lib/utils/entity-type-guards";
 import { createCalculatorEngine } from "./calculator-engine.svelte";
+import { parseExtRef } from "$lib/external-data/ids";
+import { energyToMev } from "$lib/external-data/units";
+import { isHeavyIonParticle } from "$lib/utils/available-units";
+import { formatEnergyWithUnit } from "$lib/utils/energy-autoscale";
 
 /** Resolve mass fields (massNumber, atomicMass) from built-in or external-only particle. */
 export function resolveParticleMass(
@@ -135,6 +139,49 @@ export function createCalculatorState(
     );
   }
 
+  /** Short "(min – max unit)" suffix for the out-of-range message, resolved from
+   *  the currently selected program + particle so users know what range to try
+   *  instead (#207). Each bound is auto-scaled to its own natural SI prefix
+   *  (e.g. "1 keV – 10 GeV") rather than always showing MeV; the "/nucl"
+   *  qualifier is dropped for protons/electrons, for whom it is numerically
+   *  redundant, and kept for heavy ions. Falls back to no suffix when the
+   *  range isn't known yet (e.g. external metadata still loading). */
+  function outOfRangeMessage(): string {
+    const base = "Energy out of tabulated range";
+    const programId = entitySelection.resolvedProgramId;
+    const particle = entitySelection.selectedParticle;
+    const particleId = particle?.id;
+    const baseUnit = isHeavyIonParticle(particle) ? "MeV/nucl" : "MeV";
+
+    if (typeof programId === "number" && typeof particleId === "number") {
+      const minE = service.getMinEnergy(programId, particleId);
+      const maxE = service.getMaxEnergy(programId, particleId);
+      return `${base} (${formatEnergyWithUnit(minE, baseUnit, { trimTrailingZeros: true })} – ${formatEnergyWithUnit(maxE, baseUnit, { trimTrailingZeros: true })})`;
+    }
+
+    if (typeof programId === "string") {
+      const parsed = parseExtRef(programId);
+      const meta = parsed ? extService?.getMetadata(parsed.label) : undefined;
+      const minERaw = meta?.energyGrid[0];
+      const maxERaw = meta?.energyGrid[meta.energyGrid.length - 1];
+      if (minERaw !== undefined && maxERaw !== undefined) {
+        const particleA = resolveParticleMass(particle)?.massNumber ?? 1;
+        // energyToMev normalizes to *total* MeV (per-nucleon source units are
+        // multiplied by A). baseUnit "MeV/nucl" expects a per-nucleon value
+        // (matching the built-in branch above, which passes the already
+        // per-nucleon service.getMinEnergy/getMaxEnergy straight through), so
+        // divide back down by A for heavy ions to keep the number consistent
+        // with the label.
+        const perNucleonDivisor = baseUnit === "MeV/nucl" ? particleA : 1;
+        const minE = energyToMev(minERaw, meta!.energyUnit, particleA) / perNucleonDivisor;
+        const maxE = energyToMev(maxERaw, meta!.energyUnit, particleA) / perNucleonDivisor;
+        return `${base} (${formatEnergyWithUnit(minE, baseUnit, { trimTrailingZeros: true })} – ${formatEnergyWithUnit(maxE, baseUnit, { trimTrailingZeros: true })})`;
+      }
+    }
+
+    return base;
+  }
+
   function parseRow(
     row: EnergyRow,
     particleMassNumber: number,
@@ -185,7 +232,7 @@ export function createCalculatorState(
         unit: outcome.unit,
         unitFromSuffix: outcome.unitFromSuffix,
         status: "out-of-range",
-        message: "Energy out of tabulated range",
+        message: outOfRangeMessage(),
         stoppingPower: null,
         csdaRangeCm: null,
       };

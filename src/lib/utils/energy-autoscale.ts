@@ -29,9 +29,13 @@ export function autoScaleEnergy(valueMev: number): { scaled: number; prefix: str
  * values like "1.000" and "500.0" rather than "1" and "500".
  *
  * @param value - The numeric value to format
+ * @param trimTrailingZeros - Strip insignificant trailing zeros (and a trailing
+ *   decimal point) after formatting, e.g. "1.000" → "1", "500.0" → "500".
+ *   Used for prose contexts (like the out-of-range message) where the padded
+ *   4-sig-fig form reads as noise rather than precision.
  * @returns Formatted string with 4 significant figures
  */
-function formatEnergyValue(value: number): string {
+function formatEnergyValue(value: number, trimTrailingZeros = false): string {
   if (!Number.isFinite(value) || Number.isNaN(value)) return "—";
   if (value === 0) return "0";
 
@@ -42,7 +46,9 @@ function formatEnergyValue(value: number): string {
   const decimalPlaces = Math.max(0, 3 - magnitude);
 
   // Use toFixed with the calculated decimal places
-  return value.toFixed(decimalPlaces);
+  const formatted = value.toFixed(decimalPlaces);
+  if (!trimTrailingZeros || !formatted.includes(".")) return formatted;
+  return formatted.replace(/0+$/, "").replace(/\.$/, "");
 }
 
 /**
@@ -50,6 +56,7 @@ function formatEnergyValue(value: number): string {
  *
  * @param valueMev - Energy value in MeV
  * @param baseUnit - Base unit string (e.g., 'MeV', 'MeV/nucl', 'MeV/u')
+ * @param options.trimTrailingZeros - See {@link formatEnergyValue}.
  * @returns Formatted string like '1.200 GeV/nucl' or '500.0 eV'
  *
  * The base unit is transformed by replacing the 'MeV' part with the auto-scaled prefix.
@@ -58,11 +65,14 @@ function formatEnergyValue(value: number): string {
  *   - baseUnit 'MeV/nucl' + prefix 'GeV' → 'GeV/nucl'
  *   - baseUnit 'MeV/u' + prefix 'keV' → 'keV/u'
  */
-export function formatEnergyWithUnit(valueMev: number, baseUnit: string): string {
+export function formatEnergyWithUnit(
+  valueMev: number,
+  baseUnit: string,
+  options?: { trimTrailingZeros?: boolean },
+): string {
   const { scaled, prefix } = autoScaleEnergy(valueMev);
 
-  // Format to 4 significant figures with trailing zeros
-  const formatted = formatEnergyValue(scaled);
+  const formatted = formatEnergyValue(scaled, options?.trimTrailingZeros);
 
   // Transform base unit: replace 'MeV' with the auto-scaled prefix
   // Handle case-insensitively to be robust
