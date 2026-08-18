@@ -19,6 +19,7 @@ import { isCustomMaterial } from "$lib/utils/custom-compound-material";
 import type { ExternalDataService } from "$lib/external-data/service";
 import { asBuiltinParticle, asBuiltinMaterial } from "$lib/utils/entity-type-guards";
 import { createCalculatorEngine } from "./calculator-engine.svelte";
+import { parseExtRef } from "$lib/external-data/ids";
 
 /** Resolve mass fields (massNumber, atomicMass) from built-in or external-only particle. */
 export function resolveParticleMass(
@@ -135,6 +136,34 @@ export function createCalculatorState(
     );
   }
 
+  /** Short "(min – max unit)" suffix for the out-of-range message, resolved from
+   *  the currently selected program + particle so users know what range to try
+   *  instead (#207). Falls back to no suffix when the range isn't known yet
+   *  (e.g. external metadata still loading). */
+  function outOfRangeMessage(): string {
+    const base = "Energy out of tabulated range";
+    const programId = entitySelection.resolvedProgramId;
+    const particleId = entitySelection.selectedParticle?.id;
+
+    if (typeof programId === "number" && typeof particleId === "number") {
+      const minE = service.getMinEnergy(programId, particleId);
+      const maxE = service.getMaxEnergy(programId, particleId);
+      return `${base} (${formatSigFigs(minE, 4)} – ${formatSigFigs(maxE, 4)} MeV/nucl)`;
+    }
+
+    if (typeof programId === "string") {
+      const parsed = parseExtRef(programId);
+      const meta = parsed ? extService?.getMetadata(parsed.label) : undefined;
+      const minE = meta?.energyGrid[0];
+      const maxE = meta?.energyGrid[meta.energyGrid.length - 1];
+      if (minE !== undefined && maxE !== undefined) {
+        return `${base} (${formatSigFigs(minE, 4)} – ${formatSigFigs(maxE, 4)} ${meta!.energyUnit})`;
+      }
+    }
+
+    return base;
+  }
+
   function parseRow(
     row: EnergyRow,
     particleMassNumber: number,
@@ -185,7 +214,7 @@ export function createCalculatorState(
         unit: outcome.unit,
         unitFromSuffix: outcome.unitFromSuffix,
         status: "out-of-range",
-        message: "Energy out of tabulated range",
+        message: outOfRangeMessage(),
         stoppingPower: null,
         csdaRangeCm: null,
       };

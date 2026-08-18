@@ -280,6 +280,17 @@ describe("CalculatorState", () => {
     expect(calcState.rows[0]!.status).toBe("invalid");
   });
 
+  it("reports the tabulated range in the out-of-range message (#207)", async () => {
+    calcState.updateRowText(0, "5000"); // above the mock's max energy (1000 MeV/nucl)
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("out-of-range");
+    expect(calcState.rows[0]!.message).toBe(
+      "Energy out of tabulated range (0.001 – 1000 MeV/nucl)",
+    );
+  });
+
   it("logs warning for subnormal WASM stopping power values", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -643,6 +654,47 @@ describe("CalculatorState", () => {
           100,
         );
       });
+
+      it("includes the source's tabulated range in the out-of-range message (#207)", async () => {
+        const extService = {
+          findMaterial: vi.fn(),
+          interpolateAt: vi.fn().mockResolvedValue({ stp: null, csda: null }),
+          getMetadata: vi.fn().mockReturnValue({
+            energyGrid: [1, 10, 100, 1000],
+            energyUnit: "MeV/nucl",
+          }),
+        };
+        const mergedStore = makeExternalEntityStore();
+        mergedStore.materials[0] = {
+          ...mergedStore.materials[0]!,
+          icruId: 276,
+        };
+        const matrix = buildCompatibilityMatrix(service);
+        const state = createEntitySelectionState(matrix);
+        state.setExternalContext(
+          buildExternalCompatibilityContext(
+            [mergedStore],
+            matrix.allParticles,
+            matrix.allMaterials,
+          ),
+        );
+        state.selectProgram("ext:srim:srim-2013-gui");
+
+        const externalCalc = createCalculatorState(
+          state,
+          service,
+          extService as unknown as NonNullable<Parameters<typeof createCalculatorState>[2]>,
+        );
+
+        await externalCalc.triggerCalculation();
+        await externalCalc.flushCalculation();
+        await externalCalc.flushCalculation();
+
+        expect(externalCalc.rows[0]!.status).toBe("out-of-range");
+        expect(externalCalc.rows[0]!.message).toBe(
+          "Energy out of tabulated range (1 – 1000 MeV/nucl)",
+        );
+      });
     });
 
     it("Carbon → proton: row value preserved, masterUnit switches to MeV", () => {
@@ -863,7 +915,9 @@ describe("WASM out-of-range energy (LibdedxError code 101)", () => {
     await calcState.flushCalculation();
 
     expect(calcState.rows[0]!.status).toBe("out-of-range");
-    expect(calcState.rows[0]!.message).toBe("Energy out of tabulated range");
+    expect(calcState.rows[0]!.message).toBe(
+      "Energy out of tabulated range (0.001 – 10000000000 MeV/nucl)",
+    );
     expect(calcState.rows[0]!.stoppingPower).toBeNull();
   });
 
