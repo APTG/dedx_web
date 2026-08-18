@@ -17,6 +17,20 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-08-18 — **calculator / #207**: Out-of-range energy messages now
+  auto-scale each bound to its natural SI prefix and trim the padded
+  4-sig-fig zeros (e.g. `Energy out of tabulated range (1 keV – 1 GeV)`)
+  instead of always showing raw MeV/nucl numbers, and drop the "/nucl"
+  qualifier for protons and electrons (numerically redundant for mass
+  number 1) while keeping it for heavy ions. Applied to both the
+  single-program (`calculator.svelte.ts`) and multi-program-comparison
+  (`multi-program-calc.svelte.ts`) message builders, reusing the existing
+  `formatEnergyWithUnit`/`isHeavyIonParticle` helpers; trimming is an
+  opt-in `trimTrailingZeros` option on `formatEnergyWithUnit` so the
+  Range→/STP→ result table's fixed-width formatting is unaffected. (Claude
+  Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-08-18-issue-207-natural-units.md)
+
 - 2026-08-18 — **calculator / #207**: Out-of-range energy rows now show the
   tabulated min–max energy alongside the "Energy out of tabulated range"
   message (e.g. `Energy out of tabulated range (0.001 – 1000 MeV/nucl)`),

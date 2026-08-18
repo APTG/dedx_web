@@ -13,6 +13,7 @@ import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { MultiProgramState } from "$lib/state/multi-program.svelte";
 import { runDebouncedSnapshot } from "$lib/utils/debounced-snapshot";
+import { formatEnergyWithUnit } from "$lib/utils/energy-autoscale";
 
 /**
  * Headless multi-program calculation orchestrator.
@@ -74,6 +75,9 @@ export function setupMultiProgramCalculation(
         : selectedParticle && "A" in selectedParticle
           ? selectedParticle.A || 1
           : 1;
+    // "/nucl" is numerically redundant for protons/electrons (massA <= 1), so
+    // the out-of-range message below drops it and shows plain MeV-scaled units.
+    const outOfRangeBaseUnit = massASnapshot > 1 ? "MeV/nucl" : "MeV";
 
     // Snapshot inputs so a stale async resolution cannot overwrite fresh results.
     return runDebouncedSnapshot(
@@ -117,7 +121,7 @@ export function setupMultiProgramCalculation(
                 programId,
                 new LibdedxError(
                   101,
-                  `Energy out of tabulated range (${minEnergy} – ${maxEnergy} MeV/nucl)`,
+                  `Energy out of tabulated range (${formatEnergyWithUnit(minEnergy, outOfRangeBaseUnit, { trimTrailingZeros: true })} – ${formatEnergyWithUnit(maxEnergy, outOfRangeBaseUnit, { trimTrailingZeros: true })})`,
                 ),
               );
             }

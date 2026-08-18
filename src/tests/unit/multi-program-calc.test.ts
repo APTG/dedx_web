@@ -134,7 +134,7 @@ describe("setupMultiProgramCalculation", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("marks out-of-range programs with LibdedxError code 101", async () => {
+  it("marks out-of-range programs with LibdedxError code 101 and a natural-unit range message (#207)", async () => {
     // Energy above mock max (1000 MeV/nucl) — fails the range pre-check
     calcState.updateRowText(0, "9999");
 
@@ -144,6 +144,10 @@ describe("setupMultiProgramCalculation", () => {
     for (const [, result] of multiProgState.comparisonResults) {
       expect(result).toBeInstanceOf(LibdedxError);
       expect((result as LibdedxError).code).toBe(101);
+      // Default entity is a proton, so the "/nucl" qualifier is dropped.
+      expect((result as LibdedxError).message).toBe(
+        "Energy out of tabulated range (1 keV – 1 GeV)",
+      );
     }
   });
 

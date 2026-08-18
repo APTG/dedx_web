@@ -286,8 +286,21 @@ describe("CalculatorState", () => {
     await calcState.flushCalculation();
 
     expect(calcState.rows[0]!.status).toBe("out-of-range");
+    expect(calcState.rows[0]!.message).toBe("Energy out of tabulated range (1 keV – 1 GeV)");
+  });
+
+  it("keeps the /nucl qualifier for heavy ions in the out-of-range message (#207)", async () => {
+    const helium = entitySelection.availableParticles.find((p) => p.name === "Helium");
+    expect(helium).toBeDefined();
+    entitySelection.selectParticle(helium!.id);
+
+    calcState.updateRowText(0, "5000 MeV/nucl"); // above the mock's max energy (1000 MeV/nucl)
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("out-of-range");
     expect(calcState.rows[0]!.message).toBe(
-      "Energy out of tabulated range (0.001 – 1000 MeV/nucl)",
+      "Energy out of tabulated range (1 keV/nucl – 1 GeV/nucl)",
     );
   });
 
@@ -691,9 +704,7 @@ describe("CalculatorState", () => {
         await externalCalc.flushCalculation();
 
         expect(externalCalc.rows[0]!.status).toBe("out-of-range");
-        expect(externalCalc.rows[0]!.message).toBe(
-          "Energy out of tabulated range (1 – 1000 MeV/nucl)",
-        );
+        expect(externalCalc.rows[0]!.message).toBe("Energy out of tabulated range (1 MeV – 1 GeV)");
       });
     });
 
@@ -915,9 +926,7 @@ describe("WASM out-of-range energy (LibdedxError code 101)", () => {
     await calcState.flushCalculation();
 
     expect(calcState.rows[0]!.status).toBe("out-of-range");
-    expect(calcState.rows[0]!.message).toBe(
-      "Energy out of tabulated range (0.001 – 10000000000 MeV/nucl)",
-    );
+    expect(calcState.rows[0]!.message).toBe("Energy out of tabulated range (1 keV – 10000000 GeV)");
     expect(calcState.rows[0]!.stoppingPower).toBeNull();
   });
 
