@@ -46,6 +46,26 @@ bare trailing decimal point after `toFixed`, e.g. `"1.000"` → `"1"`,
 `{ trimTrailingZeros: true }` from both out-of-range message call sites
 only. Table formatting is untouched.
 
+### Prompt 3: fix Copilot-flagged unit bug in the external heavy-ion path
+
+GitHub Copilot's PR review flagged that the external-program branch of
+`outOfRangeMessage()` converts per-nucleon source values to *total* MeV via
+`energyToMev` (which multiplies by `particleA`), but then renders that total
+value under the `MeV/nucl` label for heavy ions — inflating the displayed
+bound by a factor of `A` (e.g. a Helium-4 bound of `1 MeV/nucl` in the
+source grid would show as `4 MeV/nucl` instead of `1 MeV/nucl`). The
+existing tests only exercised a proton (A=1), where the bug is invisible.
+
+**AI response**: Confirmed the bug by reading `energyToMev` and the
+built-in branch (which passes `service.getMinEnergy`'s already-per-nucleon
+value straight through for the `MeV/nucl` label). Fixed by dividing the
+`energyToMev` result back down by `particleA` when `baseUnit === "MeV/nucl"`,
+so the display value matches the per-nucleon label (protons/electrons divide
+by 1, a no-op). Added a regression test with a Carbon-12 particle merged
+into the external store on a per-nucleon energy grid, and verified it fails
+without the fix (`12 MeV/nucl – 12 GeV/nucl` instead of the expected
+`1 MeV/nucl – 1 GeV/nucl`) before confirming it passes with the fix.
+
 ## Tasks
 
 ### Auto-scale out-of-range energy bounds and drop "/nucl" for protons/electrons
@@ -86,3 +106,17 @@ only. Table formatting is untouched.
   `formatEnergyValue`'s default, since the Range→/STP→ result table relies
   on the untrimmed fixed-4-sig-fig form for column alignment; only the
   prose out-of-range message wants the trimmed form.
+
+### Fix per-nucleon/total-MeV mixup for heavy ions on external programs
+
+- **Status**: completed
+- **Stage**: n/a (bugfix, Copilot PR review finding on the task above)
+- **Files changed**: `src/lib/state/calculator.svelte.ts` (divide the
+  `energyToMev`-converted bound by `particleA` when `baseUnit` is
+  `"MeV/nucl"`), `src/tests/unit/calculator-state.test.ts` (new regression
+  test with a merged Carbon-12 particle on a per-nucleon external grid).
+- **Decision**: Divide back down locally in `outOfRangeMessage()` rather
+  than changing `energyToMev`'s contract (total MeV), since that helper is
+  also used by `ExternalDataService` where total MeV is the correct
+  semantics.
+- **Issue**: none.

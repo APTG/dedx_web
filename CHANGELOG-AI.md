@@ -17,6 +17,16 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-08-18 — **calculator / #207**: Fixed a Copilot-flagged bug in the
+  natural-units out-of-range message (below): for heavy ions on an external
+  program with a per-nucleon energy grid, the displayed bound was inflated
+  by a factor of the mass number (e.g. Helium-4's `1 MeV/nucl` rendered as
+  `4 MeV/nucl`), because `energyToMev` normalizes to total MeV but the
+  result was shown under the `MeV/nucl` label unchanged. Now divides back
+  down by `particleA` for that label. Added a regression test with a merged
+  Carbon-12 particle (previous tests only covered a proton, A=1, which hid
+  the bug). (Claude Sonnet 5 via Claude Code)
+
 - 2026-08-18 — **calculator / #207**: Out-of-range energy messages now
   auto-scale each bound to its natural SI prefix and trim the padded
   4-sig-fig zeros (e.g. `Energy out of tabulated range (1 keV – 1 GeV)`)

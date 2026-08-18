@@ -166,8 +166,15 @@ export function createCalculatorState(
       const maxERaw = meta?.energyGrid[meta.energyGrid.length - 1];
       if (minERaw !== undefined && maxERaw !== undefined) {
         const particleA = resolveParticleMass(particle)?.massNumber ?? 1;
-        const minE = energyToMev(minERaw, meta!.energyUnit, particleA);
-        const maxE = energyToMev(maxERaw, meta!.energyUnit, particleA);
+        // energyToMev normalizes to *total* MeV (per-nucleon source units are
+        // multiplied by A). baseUnit "MeV/nucl" expects a per-nucleon value
+        // (matching the built-in branch above, which passes the already
+        // per-nucleon service.getMinEnergy/getMaxEnergy straight through), so
+        // divide back down by A for heavy ions to keep the number consistent
+        // with the label.
+        const perNucleonDivisor = baseUnit === "MeV/nucl" ? particleA : 1;
+        const minE = energyToMev(minERaw, meta!.energyUnit, particleA) / perNucleonDivisor;
+        const maxE = energyToMev(maxERaw, meta!.energyUnit, particleA) / perNucleonDivisor;
         return `${base} (${formatEnergyWithUnit(minE, baseUnit, { trimTrailingZeros: true })} – ${formatEnergyWithUnit(maxE, baseUnit, { trimTrailingZeros: true })})`;
       }
     }

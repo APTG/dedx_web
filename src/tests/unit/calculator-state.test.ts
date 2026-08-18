@@ -706,6 +706,63 @@ describe("CalculatorState", () => {
         expect(externalCalc.rows[0]!.status).toBe("out-of-range");
         expect(externalCalc.rows[0]!.message).toBe("Energy out of tabulated range (1 MeV – 1 GeV)");
       });
+
+      it("shows a per-nucleon (not total) range for heavy ions on a per-nucleon source grid (#207)", async () => {
+        const extService = {
+          findMaterial: vi.fn(),
+          interpolateAt: vi.fn().mockResolvedValue({ stp: null, csda: null }),
+          getMetadata: vi.fn().mockReturnValue({
+            // Source grid is per-nucleon; a Carbon (A=12) bound of "1 MeV/nucl"
+            // must not be inflated to a total-MeV "12" before being labeled
+            // MeV/nucl.
+            energyGrid: [1, 10, 100, 1000],
+            energyUnit: "MeV/nucl",
+          }),
+        };
+        const mergedStore = makeExternalEntityStore();
+        mergedStore.materials[0] = {
+          ...mergedStore.materials[0]!,
+          icruId: 276,
+        };
+        // Carbon-12 (Z=6, A=12), matched to the built-in Carbon by (Z, A) fallback.
+        mergedStore.particles.push({
+          id: "c12",
+          name: "Carbon",
+          symbol: "C",
+          Z: 6,
+          A: 12,
+          atomicMass: 12.0,
+          index: mergedStore.particles.length,
+        });
+        const matrix = buildCompatibilityMatrix(service);
+        const state = createEntitySelectionState(matrix);
+        state.setExternalContext(
+          buildExternalCompatibilityContext(
+            [mergedStore],
+            matrix.allParticles,
+            matrix.allMaterials,
+          ),
+        );
+        state.selectProgram("ext:srim:srim-2013-gui");
+        const carbon = matrix.allParticles.find((p) => p.name === "Carbon");
+        expect(carbon).toBeDefined();
+        state.selectParticle(carbon!.id);
+
+        const externalCalc = createCalculatorState(
+          state,
+          service,
+          extService as unknown as NonNullable<Parameters<typeof createCalculatorState>[2]>,
+        );
+
+        await externalCalc.triggerCalculation();
+        await externalCalc.flushCalculation();
+        await externalCalc.flushCalculation();
+
+        expect(externalCalc.rows[0]!.status).toBe("out-of-range");
+        expect(externalCalc.rows[0]!.message).toBe(
+          "Energy out of tabulated range (1 MeV/nucl – 1 GeV/nucl)",
+        );
+      });
     });
 
     it("Carbon → proton: row value preserved, masterUnit switches to MeV", () => {
