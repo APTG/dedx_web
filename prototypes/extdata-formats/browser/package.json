@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "zarrita": "^0.7.1"
+    "zarrita": "^0.7.5"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

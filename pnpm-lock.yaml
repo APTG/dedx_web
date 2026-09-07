@@ -18,8 +18,8 @@ importers:
         specifier: ^7.11.1
         version: 7.11.1
       zarrita:
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.13.0
@@ -2145,8 +2145,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zarrita@0.7.4:
-    resolution: {integrity: sha512-NChufj86SceFj45z4CYjndmI98dphaG7hU8Wj0UGpMyT21o0V3HTY6zo87aSobYWts1tNFivSXzH2AR1AkaWjA==}
+  zarrita@0.7.5:
+    resolution: {integrity: sha512-ZriOSEne+Wf2iuM0yjDZvUKpHNlug3dO7qJ6mAxXoOgsYV18DPOkAkwB9e0rf21bHcKcOffFuwoZwn5g6pvUeA==}
 
   zimmerframe@1.1.4:
     resolution: {integrity: sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ==}
@@ -3995,7 +3995,7 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zarrita@0.7.4:
+  zarrita@0.7.5:
     dependencies:
       '@zarrita/storage': 0.2.0
       numcodecs: 0.3.2
