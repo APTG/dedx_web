@@ -62,7 +62,7 @@
   const ariaLabel = $derived(label ?? (body ? `More information: ${body}` : "More information"));
 </script>
 
-<TooltipProvider delayDuration={150}>
+<TooltipProvider delayDuration={150} disableCloseOnTriggerClick>
   <Tooltip>
     <TooltipTrigger
       type="button"
