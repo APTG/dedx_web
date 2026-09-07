@@ -67,6 +67,6 @@
   "dependencies": {
     "jspdf": "^4.2.1",
     "jsroot": "^7.11.1",
-    "zarrita": "^0.7.4"
+    "zarrita": "^0.7.5"
   }
 }
