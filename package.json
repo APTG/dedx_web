@@ -34,7 +34,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@internationalized/date": "^3.12.4",
-    "@lucide/svelte": "^1.41.0",
+    "@lucide/svelte": "^1.42.0",
     "@playwright/test": "^1.62.1",
     "@sveltejs/adapter-static": "^3.0.9",
     "@sveltejs/kit": "^2.70.3",
