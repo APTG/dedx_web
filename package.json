@@ -34,7 +34,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@internationalized/date": "^3.12.4",
-    "@lucide/svelte": "^1.41.0",
+    "@lucide/svelte": "^1.47.0",
     "@playwright/test": "^1.62.1",
     "@sveltejs/adapter-static": "^3.0.9",
     "@sveltejs/kit": "^2.70.3",
@@ -44,7 +44,7 @@
     "@testing-library/svelte": "^5.4.2",
     "@testing-library/user-event": "^14.6.7",
     "@types/node": "^26.4.1",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "bits-ui": "^2.19.0",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.5",
@@ -61,8 +61,8 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.69.0",
-    "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
